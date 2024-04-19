@@ -10,8 +10,18 @@ import io.github.jopenlibs.vault.VaultException;
 
 public class Main {
     public static void main(String[] args) {
-        final AIProvider ai = DefaultAIProvider.createInstance("secret/gpt", "api-key");
+        final AIProvider<String> ai = DefaultAIProvider.createInstance("secret/gpt", "api-key");
         final String response = ai.execute(model -> model.generate("Coucou !!"));
         System.out.println(response);
+
+        ai.withContext("J'aime les motos");
+        ai.withContext("Je n'aime pas le foot");
+        ai.withContext("J'adore le JAVA !");
+
+        System.out.println(
+                ai.find("Est-ce que j'aime le foot ?")
+                        .map(AIProvider::collect)
+        );
+
     }
 }
