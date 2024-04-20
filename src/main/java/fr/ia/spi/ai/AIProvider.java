@@ -1,5 +1,6 @@
 package fr.ia.spi.ai;
 
+import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
@@ -11,7 +12,9 @@ import java.util.function.Function;
 
 public interface AIProvider<E> {
 
-    <T> T execute(Function<ChatLanguageModel, T> executor);
+    <T> T executeWithModel(Function<ChatLanguageModel, T> executor);
+
+    <T> T executeWithRetriever(Function<ConversationalRetrievalChain, T> executor);
 
      AIProvider<E> withStore(StoreProvider<E> storeProvider);
 

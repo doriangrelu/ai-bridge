@@ -1,9 +1,11 @@
 package fr.ia.services.ai;
 
+import dev.langchain4j.chain.ConversationalRetrievalChain;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.retriever.EmbeddingStoreRetriever;
 import dev.langchain4j.store.embedding.EmbeddingMatch;
 import fr.ia.services.ai.store.InMemoryStore;
 import fr.ia.services.secret.VaultSecretProvider;
@@ -25,11 +27,14 @@ public class DefaultAIProvider<N> implements AIProvider<N> {
 
     private final ChatLanguageModel model;
     private final AtomicReference<StoreProvider<N>> provider;
+    private final AtomicReference<ConversationalRetrievalChain> chain;
 
     public static DefaultAIProvider<String> createInstance(final SecretProvider provider, final String path, final String name) {
+        final String apiKey = provider.revolve(path, name).orElseThrow();
         return new DefaultAIProvider<>(
-                OpenAiChatModel.withApiKey(provider.revolve(path, name).orElseThrow()),
-                new AtomicReference<>(InMemoryStore.createInstance())
+                OpenAiChatModel.withApiKey(apiKey),
+                new AtomicReference<>(InMemoryStore.createInstance()),
+                new AtomicReference<>()
         );
     }
 
@@ -46,8 +51,19 @@ public class DefaultAIProvider<N> implements AIProvider<N> {
     }
 
     @Override
-    public <T> T execute(Function<ChatLanguageModel, T> executor) {
+    public <T> T executeWithModel(Function<ChatLanguageModel, T> executor) {
         return executor.apply(this.model);
+    }
+
+    @Override
+    public <T> T executeWithRetriever(Function<ConversationalRetrievalChain, T> executor) {
+        final ConversationalRetrievalChain chain = ConversationalRetrievalChain.builder()
+                .chatLanguageModel(this.model)
+                .retriever(EmbeddingStoreRetriever.from(this.provider.get().provideStore(), this.provider.get().provideModel()))
+                // .chatMemory() // you can override default chat memory
+                // .promptTemplate() // you can override default prompt template
+                .build();
+        return executor.apply(chain);
     }
 
     @Override
@@ -75,7 +91,6 @@ public class DefaultAIProvider<N> implements AIProvider<N> {
                 .stream()
                 .findFirst();
     }
-
 
 
 }

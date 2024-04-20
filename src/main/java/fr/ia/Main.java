@@ -1,17 +1,12 @@
 package fr.ia;
 
-import dev.langchain4j.model.chat.ChatLanguageModel;
-import dev.langchain4j.model.openai.OpenAiChatModel;
 import fr.ia.services.ai.DefaultAIProvider;
-import fr.ia.services.secret.VaultSecretProvider;
 import fr.ia.spi.ai.AIProvider;
-import fr.ia.spi.secret.SecretProvider;
-import io.github.jopenlibs.vault.VaultException;
 
 public class Main {
     public static void main(String[] args) {
         final AIProvider<String> ai = DefaultAIProvider.createInstance("secret/gpt", "api-key");
-        final String response = ai.execute(model -> model.generate("Coucou !!"));
+        final String response = ai.executeWithModel(model -> model.generate("Coucou !!"));
         System.out.println(response);
 
         ai.withContext("J'aime les motos");
@@ -19,8 +14,13 @@ public class Main {
         ai.withContext("J'adore le JAVA !");
 
         System.out.println(
-                ai.find("Est-ce que j'aime le foot ?")
+                ai.find("Java ?")
                         .map(AIProvider::collect)
+        );
+
+        final String chainResponse = ai.executeWithRetriever(chain -> chain.execute("Donne moi la liste de mes activités préférées..."));
+        System.out.println(
+                chainResponse
         );
 
     }
